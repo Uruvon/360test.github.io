@@ -1,0 +1,127 @@
+<html>
+<!-- 
+        organise positions
+        add button
+        make button go back
+        toggle visibility
+        colors    
+-->
+<head>
+        <title>CompChart</title>
+        <script src="https://aframe.io/releases/0.8.2/aframe.min.js"></script>
+        <script src="/js-vendor/aframe-charts-component.js"></script>
+        <script src="https://unpkg.com/aframe-animation-component@^4.1.2/dist/aframe-animation-component.min.js"></script> 
+        
+</head>
+
+<body>
+        <a-scene cursor="rayOrigin: mouse" background="color: silver" fog="type: linear; color: silver; far: 20; near: 2; density: 0.1">
+                <a-assets>
+                        <a-asset-item id="dataEuNonEu" src="data_Eu_NonEu.json"></a-asset-item>
+                        <a-asset-item id="dataEuSectors" src="data_Eu_Sectors.json"></a-asset-item>
+                        <a-asset-item id="dataNonEuSectors" src="data_NonEu_Sectors.json"></a-asset-item>
+                        <a-asset-item id="dataEuCountries" src="data_Eu_Countries.json"></a-asset-item>
+                        <a-asset-item id="dataNonEuCountries" src="data_NonEu_Countries.json"></a-asset-item>
+                </a-assets>
+                
+                <a-entity id="chartEuNonEu"
+                        charts="
+                                dataPoints: #dataEuNonEu; 
+                                type: pie; 
+                                pie_radius: 5;
+                                show_legend_info: true;
+                                show_legend_title: EU to Non EU Tenders;
+                                show_legend_position: -5.5 8 -1;
+                                show_legend_rotation: 0 0 0;"
+                        position="3 5 -1" 
+                        rotation="90 0 0"
+                     
+                >
+                </a-entity>
+
+                <a-entity id="chartEuSectors"
+                        charts="
+                                dataPoints: #dataEuSectors; 
+                                type: pie; 
+                                pie_radius: 5;
+                                show_legend_info: true;
+                                show_legend_title: Eu tenders by sector;
+                                show_legend_position: -10.5 8 -21;
+                                show_legend_rotation: 0 0 0;"
+                        position="-2 5 -21" 
+                        rotation="90 0 0"
+                        visible= false>
+                </a-entity>
+
+                <a-entity id="chartNonEuSectors"
+                        charts="
+                                dataPoints: #dataNonEuSectors; 
+                                type: pie; 
+                                pie_radius: 5;
+                                show_legend_info: true;
+                                show_legend_title: Non Eu tenders by sector;
+                                show_legend_position: 13.5 8 -21;
+                                show_legend_rotation: 0 0 0;"
+                        position="22 5 -21" 
+                        rotation="90 0 0"
+                        visible= false>
+                </a-entity>
+
+                <a-entity id="chartEuCountries"
+                        charts="
+                                dataPoints: #dataEuCountries; 
+                                type: pie; 
+                                pie_radius: 5;
+                                show_legend_info: true;
+                                show_legend_title: Eu tenders by countries;
+                                show_legend_position: -10.5 7 -40.5;
+                                show_legend_rotation: 0 0 0;"
+                        position="-2 5 -41" 
+                        rotation="90 0 0"
+                        visible= false>
+                </a-entity>
+
+                <a-entity id="chartNonEuCountries"
+                        charts="
+                                dataPoints: #dataNonEuCountries; 
+                                type: pie; 
+                                pie_radius: 5;
+                                show_legend_info: true;
+                                show_legend_title: Non Eu tenders by countries;
+                                show_legend_position: 13.5 8 -41;
+                                show_legend_rotation: 0 0 0;"
+                        position="22 5 -41" 
+                        rotation="90 0 0"
+                        visible= false>
+                </a-entity>
+
+                <a-entity id= "screen" position = "0 3 7"
+                animation ="
+                property: position;
+                loop: false;
+                to: 0 3 7;">
+
+                        <a-light type="point" intensity="1" position="-2 10 10"></a-light>
+                        <a-camera id="camera"                   
+                                look-controls-enabled="false" 
+                                wasd-controls-enabled="true">
+                                <a-plane id = "btnBackmain" src="#ground" height="0.1" width="0.5" position="0 -0.7 -1" visible = false>
+                                <a-text value="Back" height="1" width="1" position="-0.05 0 0" 
+                                ></a-text></a-plane>
+
+                                 <a-plane id = "btnBackEu" src="#ground" height="0.1" width="0.5" position="0 -0.7 -1" visible = false>
+                                <a-text value="Back" height="1" width="1" position="-0.05 0 0" 
+                                ></a-text></a-plane>
+
+                                 <a-plane id = "btnBackNEu" src="#ground" height="0.1" width="0.5" position="0 -0.7 -1" visible = false>
+                                <a-text value="Back" height="1" width="1" position="-0.05 0 0" 
+                                ></a-text></a-plane>
+                        </a-camera>
+                        
+
+                </a-entity>
+   
+        </a-scene>
+        <script src="/js/main.js"></script>
+</body>
+</html>
