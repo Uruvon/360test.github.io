@@ -1,27 +1,20 @@
+<!DOCTYPE html>
 <html>
-<!-- 
-        organise positions
-        add button
-        make button go back
-        toggle visibility
-        colors    
--->
 <head>
         <title>CompChart</title>
-        <script src="https://aframe.io/releases/0.8.2/aframe.min.js"></script>
-        <script src="./js-vendor/aframe-charts-component.js"></script>
+        <script src="https://aframe.io/releases/0.9./aframe.min.js"></script>
+        <script src="./js/js-vendor/aframe-charts-component.js"></script>
         <script src="https://unpkg.com/aframe-animation-component@^4.1.2/dist/aframe-animation-component.min.js"></script> 
-        
 </head>
 
 <body>
         <a-scene cursor="rayOrigin: mouse" background="color: silver" fog="type: linear; color: silver; far: 20; near: 2; density: 0.1">
                 <a-assets>
-                        <a-asset-item id="dataEuNonEu" src="./data_Eu_NonEu.json"></a-asset-item>
-                        <a-asset-item id="dataEuSectors" src="./data_Eu_Sectors.json"></a-asset-item>
-                        <a-asset-item id="dataNonEuSectors" src="./data_NonEu_Sectors.json"></a-asset-item>
-                        <a-asset-item id="dataEuCountries" src="./data_Eu_Countries.json"></a-asset-item>
-                        <a-asset-item id="dataNonEuCountries" src="./data_NonEu_Countries.json"></a-asset-item>
+                        <a-asset-item id="dataEuNonEu" src="./assets/data_Eu_NonEu.json"></a-asset-item>
+                        <a-asset-item id="dataEuSectors" src="./assets/data_Eu_Sectors.json"></a-asset-item>
+                        <a-asset-item id="dataNonEuSectors" src="./assets/data_NonEu_Sectors.json"></a-asset-item>
+                        <a-asset-item id="dataEuCountries" src="./assets/data_Eu_Countries.json"></a-asset-item>
+                        <a-asset-item id="dataNonEuCountries" src="./assets/data_NonEu_Countries.json"></a-asset-item>
                 </a-assets>
                 
                 <a-entity id="chartEuNonEu"
