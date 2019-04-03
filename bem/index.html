@@ -1,120 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>
-        <title>CompChart</title>
-        <script src="https://aframe.io/releases/0.9.0/aframe.min.js"></script>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+  
+  <title>Tenderstream - Tenders from 2018</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0">
+  <meta name="theme-color" content="#16161d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="x-ua-compatible" content="IE=Edge">
+
+  <link href="/build/app.css" rel="stylesheet">
+  <script src="/build/app.js"></script>
+
+  <link rel="apple-touch-icon" href="/assets/icon/icon.png">
+  <link rel="icon" type="image/x-icon" href="/assets/icon/favicon.ico">
+  <link rel="manifest" href="/manifest.json">
 </head>
-
 <body>
-        <a-scene cursor="rayOrigin: mouse" background="color: silver" fog="type: linear; color: silver; far: 20; near: 2; density: 0.1">
-                <a-assets>
-                        <a-asset-item id="dataEuNonEu" src="./assets/data_Eu_NonEu.json"></a-asset-item>
-                        <a-asset-item id="dataEuSectors" src="./assets/data_Eu_Sectors.json"></a-asset-item>
-                        <a-asset-item id="dataNonEuSectors" src="./assets/data_NonEu_Sectors.json"></a-asset-item>
-                        <a-asset-item id="dataEuCountries" src="./assets/data_Eu_Countries.json"></a-asset-item>
-                        <a-asset-item id="dataNonEuCountries" src="./assets/data_NonEu_Countries.json"></a-asset-item>
-                </a-assets>
-                
-                <a-entity id="chartEuNonEu"
-                        charts="
-                                dataPoints: #dataEuNonEu; 
-                                type: pie; 
-                                pie_radius: 5;
-                                show_legend_info: true;
-                                show_legend_title: EU to Non EU Tenders;
-                                show_legend_position: -5.5 8 -1;
-                                show_legend_rotation: 0 0 0;"
-                        position="3 5 -1" 
-                        rotation="90 0 0"
-                     
-                >
-                </a-entity>
 
-                <a-entity id="chartEuSectors"
-                        charts="
-                                dataPoints: #dataEuSectors; 
-                                type: pie; 
-                                pie_radius: 5;
-                                show_legend_info: true;
-                                show_legend_title: Eu tenders by sector;
-                                show_legend_position: -10.5 8 -21;
-                                show_legend_rotation: 0 0 0;"
-                        position="-2 5 -21" 
-                        rotation="90 0 0"
-                        visible= false>
-                </a-entity>
+  <app-home></app-home>
 
-                <a-entity id="chartNonEuSectors"
-                        charts="
-                                dataPoints: #dataNonEuSectors; 
-                                type: pie; 
-                                pie_radius: 5;
-                                show_legend_info: true;
-                                show_legend_title: Non Eu tenders by sector;
-                                show_legend_position: 13.5 8 -21;
-                                show_legend_rotation: 0 0 0;"
-                        position="22 5 -21" 
-                        rotation="90 0 0"
-                        visible= false>
-                </a-entity>
 
-                <a-entity id="chartEuCountries"
-                        charts="
-                                dataPoints: #dataEuCountries; 
-                                type: pie; 
-                                pie_radius: 5;
-                                show_legend_info: true;
-                                show_legend_title: Eu tenders by countries;
-                                show_legend_position: -10.5 7 -40.5;
-                                show_legend_rotation: 0 0 0;"
-                        position="-2 5 -41" 
-                        rotation="90 0 0"
-                        visible= false>
-                </a-entity>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      // auto-unregister service worker during dev mode
+      navigator.serviceWorker.getRegistration().then(function(registration) {
+        if (registration) {
+          registration.unregister().then(function() { location.reload(true) });
+        }
+      });
+    }
+  </script>
 
-                <a-entity id="chartNonEuCountries"
-                        charts="
-                                dataPoints: #dataNonEuCountries; 
-                                type: pie; 
-                                pie_radius: 5;
-                                show_legend_info: true;
-                                show_legend_title: Non Eu tenders by countries;
-                                show_legend_position: 13.5 8 -41;
-                                show_legend_rotation: 0 0 0;"
-                        position="22 5 -41" 
-                        rotation="90 0 0"
-                        visible= false>
-                </a-entity>
 
-                <a-entity id= "screen" position = "0 3 7"
-                animation ="
-                property: position;
-                loop: false;
-                to: 0 3 7;">
 
-                        <a-light type="point" intensity="1" position="-2 10 10"></a-light>
-                        <a-camera id="camera"                   
-                                look-controls-enabled="false" 
-                                wasd-controls-enabled="true">
-                                <a-plane id = "btnBackmain" src="#ground" height="0.1" width="0.5" position="0 -0.7 -1" visible = false>
-                                <a-text value="Back" height="1" width="1" position="-0.05 0 0" 
-                                ></a-text></a-plane>
-
-                                 <a-plane id = "btnBackEu" src="#ground" height="0.1" width="0.5" position="0 -0.7 -1" visible = false>
-                                <a-text value="Back" height="1" width="1" position="-0.05 0 0" 
-                                ></a-text></a-plane>
-
-                                 <a-plane id = "btnBackNEu" src="#ground" height="0.1" width="0.5" position="0 -0.7 -1" visible = false>
-                                <a-text value="Back" height="1" width="1" position="-0.05 0 0" 
-                                ></a-text></a-plane>
-                        </a-camera>
-                        
-
-                </a-entity>
-   
-        </a-scene>
-        <script src="./js/js-vendor/aframe-charts-component.js"></script>
-        <script src="https://unpkg.com/aframe-animation-component@^4.1.2/dist/aframe-animation-component.min.js"></script> 
-        <script src="./js/main.js"></script>
-</body>
-</html>
+</body></html>
