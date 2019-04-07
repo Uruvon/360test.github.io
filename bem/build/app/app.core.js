@@ -5,6 +5,211 @@
 
 
 })(x,r);
+
+
+(function(Context, resourcesUrl){
+    /** @ionic/core global **/
+
+    const getPlatforms = (win) => setupPlatforms(win);
+    const isPlatform = (win, platform) => getPlatforms(win).includes(platform);
+    const setupPlatforms = (win) => {
+        win.Ionic = win.Ionic || {};
+        let platforms = win.Ionic.platforms;
+        if (platforms == null) {
+            platforms = win.Ionic.platforms = detectPlatforms(win);
+            platforms.forEach(p => win.document.documentElement.classList.add(`plt-${p}`));
+        }
+        return platforms;
+    };
+    const isMobileWeb = (win) => isMobile(win) && !isHybrid(win);
+    const detectPlatforms = (win) => Object.keys(PLATFORMS_MAP).filter(p => PLATFORMS_MAP[p](win));
+    const isIpad = (win) => testUserAgent(win, /iPad/i);
+    const isIphone = (win) => testUserAgent(win, /iPhone/i);
+    const isIOS = (win) => testUserAgent(win, /iPad|iPhone|iPod/i);
+    const isAndroid = (win) => testUserAgent(win, /android|sink/i);
+    const isAndroidTablet = (win) => {
+        return isAndroid(win) && !testUserAgent(win, /mobile/i);
+    };
+    const isPhablet = (win) => {
+        const width = win.innerWidth;
+        const height = win.innerHeight;
+        const smallest = Math.min(width, height);
+        const largest = Math.max(width, height);
+        return (smallest > 390 && smallest < 520) &&
+            (largest > 620 && largest < 800);
+    };
+    const isTablet = (win) => {
+        const width = win.innerWidth;
+        const height = win.innerHeight;
+        const smallest = Math.min(width, height);
+        const largest = Math.max(width, height);
+        return (isIpad(win) ||
+            isAndroidTablet(win) ||
+            ((smallest > 460 && smallest < 820) &&
+                (largest > 780 && largest < 1400)));
+    };
+    const isMobile = (win) => matchMedia(win, '(any-pointer:coarse)');
+    const isDesktop = (win) => !isMobile(win);
+    const isHybrid = (win) => isCordova(win) || isCapacitorNative(win);
+    const isCordova = (win) => !!(win['cordova'] || win['phonegap'] || win['PhoneGap']);
+    const isCapacitorNative = (win) => {
+        const capacitor = win['Capacitor'];
+        return !!(capacitor && capacitor.isNative);
+    };
+    const isElectron = (win) => testUserAgent(win, /electron/);
+    const isPWA = (win) => win.matchMedia ? (win.matchMedia('(display-mode: standalone)').matches || win.navigator.standalone) : false;
+    const testUserAgent = (win, expr) => win.navigator && win.navigator.userAgent ? expr.test(win.navigator.userAgent) : false;
+    const matchMedia = (win, query) => win.matchMedia ? win.matchMedia(query).matches : false;
+    const PLATFORMS_MAP = {
+        'ipad': isIpad,
+        'iphone': isIphone,
+        'ios': isIOS,
+        'android': isAndroid,
+        'phablet': isPhablet,
+        'tablet': isTablet,
+        'cordova': isCordova,
+        'capacitor': isCapacitorNative,
+        'electron': isElectron,
+        'pwa': isPWA,
+        'mobile': isMobile,
+        'mobileweb': isMobileWeb,
+        'desktop': isDesktop,
+        'hybrid': isHybrid
+    };
+
+    class Config {
+        constructor(configObj) {
+            this.m = new Map(Object.entries(configObj));
+        }
+        get(key, fallback) {
+            const value = this.m.get(key);
+            return (value !== undefined) ? value : fallback;
+        }
+        getBoolean(key, fallback = false) {
+            const val = this.m.get(key);
+            if (val === undefined) {
+                return fallback;
+            }
+            if (typeof val === 'string') {
+                return val === 'true';
+            }
+            return !!val;
+        }
+        getNumber(key, fallback) {
+            const val = parseFloat(this.m.get(key));
+            return isNaN(val) ? (fallback !== undefined ? fallback : NaN) : val;
+        }
+        set(key, value) {
+            this.m.set(key, value);
+        }
+    }
+    function configFromSession(win) {
+        try {
+            const configStr = win.sessionStorage.getItem(IONIC_SESSION_KEY);
+            return configStr !== null ? JSON.parse(configStr) : {};
+        }
+        catch (e) {
+            return {};
+        }
+    }
+    function saveConfig(win, config) {
+        try {
+            win.sessionStorage.setItem(IONIC_SESSION_KEY, JSON.stringify(config));
+        }
+        catch (e) {
+            return;
+        }
+    }
+    function configFromURL(win) {
+        const config = {};
+        win.location.search.slice(1)
+            .split('&')
+            .map(entry => entry.split('='))
+            .map(([key, value]) => [decodeURIComponent(key), decodeURIComponent(value)])
+            .filter(([key]) => startsWith(key, IONIC_PREFIX))
+            .map(([key, value]) => [key.slice(IONIC_PREFIX.length), value])
+            .forEach(([key, value]) => {
+            config[key] = value;
+        });
+        return config;
+    }
+    function startsWith(input, search) {
+        return input.substr(0, search.length) === search;
+    }
+    const IONIC_PREFIX = 'ionic:';
+    const IONIC_SESSION_KEY = 'ionic-persist-config';
+
+    const win = typeof window !== 'undefined' ? window : {};
+    const Ionic = win['Ionic'] = win['Ionic'] || {};
+    Object.defineProperty(Ionic, 'queue', {
+        get: () => Context['queue']
+    });
+    setupPlatforms(win);
+    Context.isPlatform = isPlatform;
+    const configObj = Object.assign({}, configFromSession(win), { persistConfig: false }, Ionic['config'], configFromURL(win));
+    const config = Ionic['config'] = Context['config'] = new Config(configObj);
+    if (config.getBoolean('persistConfig')) {
+        saveConfig(win, configObj);
+    }
+    const documentElement = win.document ? win.document.documentElement : null;
+    const mode = config.get('mode', (documentElement && documentElement.getAttribute('mode')) || (isPlatform(win, 'ios') ? 'ios' : 'md'));
+    Ionic.mode = Context.mode = mode;
+    config.set('mode', mode);
+    if (documentElement) {
+        documentElement.setAttribute('mode', mode);
+        documentElement.classList.add(mode);
+    }
+    if (config.getBoolean('_testing')) {
+        config.set('animated', false);
+    }
+})(x,r);
+
+
+(function(Context, resourcesUrl){
+    /** @stencil/redux global **/
+
+    Context.store = (() => {
+        let _store;
+        const setStore = (store) => {
+            _store = store;
+        };
+        const getState = () => {
+            return _store && _store.getState();
+        };
+        const getStore = () => {
+            return _store;
+        };
+        const mapDispatchToProps = (component, props) => {
+            Object.keys(props).forEach(actionName => {
+                const action = props[actionName];
+                Object.defineProperty(component, actionName, {
+                    get: () => (...args) => _store.dispatch(action(...args)),
+                    configurable: true,
+                    enumerable: true,
+                });
+            });
+        };
+        const mapStateToProps = (component, mapState) => {
+            const _mapStateToProps = (_component, _mapState) => {
+                const mergeProps = mapState(_store.getState());
+                Object.keys(mergeProps).forEach(newPropName => {
+                    const newPropValue = mergeProps[newPropName];
+                    component[newPropName] = newPropValue;
+                });
+            };
+            const unsubscribe = _store.subscribe(() => _mapStateToProps(component, mapState));
+            _mapStateToProps(component, mapState);
+            return unsubscribe;
+        };
+        return {
+            getStore,
+            setStore,
+            getState,
+            mapDispatchToProps,
+            mapStateToProps,
+        };
+    })();
+})(x,r);
 /**
  * SSR Attribute Names
  */
@@ -22,7 +227,18 @@ const DEFAULT_STYLE_MODE = '$';
 
 /**
  * Key Name to Key Code Map
- */ function getScopeId(cmpMeta, mode) {
+ */ const KEY_CODE_MAP = {
+  'enter': 13,
+  'escape': 27,
+  'space': 32,
+  'tab': 9,
+  'left': 37,
+  'up': 38,
+  'right': 39,
+  'down': 40
+};
+
+function getScopeId(cmpMeta, mode) {
   return 'sc-' + cmpMeta.tagNameMeta + (mode && mode !== DEFAULT_STYLE_MODE ? '-' + mode : '');
 }
 
@@ -70,11 +286,16 @@ const attachStyles = (plt, domApi, cmpMeta, hostElm) => {
   // create a scope id which is useful for scoped css
   // and add the scope attribute to the host
   // create the style id w/ the host element's mode
-  let styleId = cmpMeta.tagNameMeta + DEFAULT_STYLE_MODE;
+  let styleId = cmpMeta.tagNameMeta + hostElm.mode;
   let styleTemplate = cmpMeta[styleId];
-  // if (false || true) {
+  // if (true || true) {
     const shouldScopeCss = 2 /* ScopedCss */ === cmpMeta.encapsulationMeta || 1 /* ShadowDom */ === cmpMeta.encapsulationMeta && !plt.domApi.$supportsShadowDom;
   if (shouldScopeCss && (hostElm['s-sc'] = styleTemplate ? getScopeId(cmpMeta, hostElm.mode) : getScopeId(cmpMeta)), 
+  // }
+  styleTemplate || (
+  // doesn't look like there's a style template with the mode
+  // create the style id using the default style mode and try again
+  styleId = cmpMeta.tagNameMeta + DEFAULT_STYLE_MODE, styleTemplate = cmpMeta[styleId]), 
   styleTemplate) {
     // cool, we found a style template element for this component
     let styleContainerNode = domApi.$doc.head;
@@ -118,24 +339,33 @@ const toLowerCase = str => str.toLowerCase();
 
 const dashToPascalCase = str => toLowerCase(str).split('-').map(segment => segment.charAt(0).toUpperCase() + segment.slice(1)).join('');
 
+const noop = () => {};
+
 const updateAttribute = (elm, memberName, newValue, isBooleanAttr = 'boolean' === typeof newValue, isXlinkNs) => {
-  isXlinkNs = memberName !== (memberName = memberName.replace(/^xlink\:?/, '')), null == newValue || isBooleanAttr && (!newValue || 'false' === newValue) ? isXlinkNs ? elm.removeAttributeNS(XLINK_NS$1, toLowerCase(memberName)) : elm.removeAttribute(memberName) : 'function' !== typeof newValue && (newValue = isBooleanAttr ? '' : newValue.toString(), 
-  isXlinkNs ? elm.setAttributeNS(XLINK_NS$1, toLowerCase(memberName), newValue) : elm.setAttribute(memberName, newValue));
+  isXlinkNs = memberName !== (memberName = memberName.replace(/^xlink\:?/, '')), null == newValue || isBooleanAttr && (!newValue || 'false' === newValue) ? isXlinkNs ? elm.removeAttributeNS(XLINK_NS, toLowerCase(memberName)) : elm.removeAttribute(memberName) : 'function' !== typeof newValue && (newValue = isBooleanAttr ? '' : newValue.toString(), 
+  isXlinkNs ? elm.setAttributeNS(XLINK_NS, toLowerCase(memberName), newValue) : elm.setAttribute(memberName, newValue));
 };
 
-const XLINK_NS$1 = 'http://www.w3.org/1999/xlink';
+const XLINK_NS = 'http://www.w3.org/1999/xlink';
 
 const setAccessor = (plt, elm, memberName, oldValue, newValue, isSvg, isHostElement) => {
   if ('class' !== memberName || isSvg) if ('style' === memberName) {
-    false;
+    for (const prop in oldValue) newValue && null != newValue[prop] || (/-/.test(prop) ? elm.style.removeProperty(prop) : elm.style[prop] = '');
     for (const prop in newValue) oldValue && newValue[prop] === oldValue[prop] || (/-/.test(prop) ? elm.style.setProperty(prop, newValue[prop]) : elm.style[prop] = newValue[prop]);
   } else if ('o' !== memberName[0] || 'n' !== memberName[1] || !/[A-Z]/.test(memberName[2]) || memberName in elm) if ('list' !== memberName && 'type' !== memberName && !isSvg && (memberName in elm || -1 !== [ 'object', 'function' ].indexOf(typeof newValue) && null !== newValue) || false) {
     // Properties
     // - list and type are attributes that get applied as values on the element
     // - all svgs get values as attributes not props
     // - check if elm contains name or if the value is array, object, or function
-    plt.getComponentMeta(elm);
-    'ref' !== memberName && (
+    const cmpMeta = plt.getComponentMeta(elm);
+    cmpMeta && cmpMeta.membersMeta && cmpMeta.membersMeta[memberName] ? (
+    // we know for a fact that this element is a known component
+    // and this component has this member name as a property,
+    // let's set the known @Prop on this element
+    // set it directly as property on the element
+    setProperty(elm, memberName, newValue), isHostElement && cmpMeta.membersMeta[memberName].reflectToAttrib && 
+    // we also want to set this data to the attribute
+    updateAttribute(elm, cmpMeta.membersMeta[memberName].attribName, newValue, 4 /* Boolean */ === cmpMeta.membersMeta[memberName].propType)) : 'ref' !== memberName && (
     // this member name is a property on this element, but it's not a component
     // this is a native property like "value" or something
     // also we can ignore the "ref" member name at this point
@@ -154,16 +384,28 @@ const setAccessor = (plt, elm, memberName, oldValue, newValue, isSvg, isHostElem
   // member name "onmouseover" is on the element's prototype
   // so let's add the listener "mouseover", which is all lowercased
   memberName = toLowerCase(memberName) in elm ? toLowerCase(memberName.substring(2)) : toLowerCase(memberName[2]) + memberName.substring(3), 
-  newValue && newValue !== oldValue && 
+  newValue ? newValue !== oldValue && 
   // add listener
-  plt.domApi.$addEventListener(elm, memberName, newValue, 0); else elm.className = newValue;
+  plt.domApi.$addEventListener(elm, memberName, newValue, 0) : 
+  // remove listener
+  plt.domApi.$removeEventListener(elm, memberName, 0); else if (oldValue !== newValue) {
+    const oldList = parseClassList(oldValue);
+    const newList = parseClassList(newValue);
+    // remove classes in oldList, not included in newList
+        const toRemove = oldList.filter(item => !newList.includes(item));
+    const classList = parseClassList(elm.className).filter(item => !toRemove.includes(item));
+    // add classes from newValue that are not in oldList or classList
+        const toAdd = newList.filter(item => !oldList.includes(item) && !classList.includes(item));
+    classList.push(...toAdd), elm.className = classList.join(' ');
+  }
 };
+
+const parseClassList = value => null == value || '' === value ? [] : value.trim().split(/\s+/);
 
 /**
  * Attempt to set a DOM property to the given value.
  * IE & FF throw for certain property-value combinations.
- */
-const setProperty = (elm, name, value) => {
+ */ const setProperty = (elm, name, value) => {
   try {
     elm[name] = value;
   } catch (e) {}
@@ -176,6 +418,8 @@ const updateElement = (plt, oldVnode, newVnode, isSvgMode, memberName) => {
   const elm = 11 /* DocumentFragment */ === newVnode.elm.nodeType && newVnode.elm.host ? newVnode.elm.host : newVnode.elm;
   const oldVnodeAttrs = oldVnode && oldVnode.vattrs || EMPTY_OBJ;
   const newVnodeAttrs = newVnode.vattrs || EMPTY_OBJ;
+  // remove attributes no longer present on the vnode by setting them to undefined
+  for (memberName in oldVnodeAttrs) newVnodeAttrs && null != newVnodeAttrs[memberName] || null == oldVnodeAttrs[memberName] || setAccessor(plt, elm, memberName, oldVnodeAttrs[memberName], void 0, isSvgMode, newVnode.ishost);
   // add new & update changed attributes
   for (memberName in newVnodeAttrs) memberName in oldVnodeAttrs && newVnodeAttrs[memberName] === ('value' === memberName || 'checked' === memberName ? elm[memberName] : oldVnodeAttrs[memberName]) || setAccessor(plt, elm, memberName, oldVnodeAttrs[memberName], newVnodeAttrs[memberName], isSvgMode, newVnode.ishost);
 };
@@ -260,6 +504,28 @@ const createRendererPatch = (plt, domApi) => {
     for (containerElm = contentRef && domApi.$parentNode(contentRef) || parentElm, containerElm.shadowRoot && domApi.$tagName(containerElm) === hostTagName && (containerElm = containerElm.shadowRoot); startIdx <= endIdx; ++startIdx) vnodes[startIdx] && (childNode = isDef(vnodes[startIdx].vtext) ? domApi.$createTextNode(vnodes[startIdx].vtext) : createElm(null, parentVNode, startIdx, parentElm), 
     childNode && (vnodes[startIdx].elm = childNode, domApi.$insertBefore(containerElm, childNode, referenceNode(before))));
   };
+  const removeVnodes = (vnodes, startIdx, endIdx, node) => {
+    for (;startIdx <= endIdx; ++startIdx) isDef(vnodes[startIdx]) && (node = vnodes[startIdx].elm, 
+    // we're removing this element
+    // so it's possible we need to show slot fallback content now
+    checkSlotFallbackVisibility = true, node['s-ol'] ? 
+    // remove the original location comment
+    domApi.$remove(node['s-ol']) : 
+    // it's possible that child nodes of the node
+    // that's being removed are slot nodes
+    putBackInOriginalLocation(node, true), 
+    // remove the vnode's element from the dom
+    domApi.$remove(node));
+  };
+  const isSameVnode = (vnode1, vnode2) => {
+    // compare if two vnode to see if they're "technically" the same
+    // need to have the same element tag, and same key to be the same
+    if (vnode1.vtag === vnode2.vtag && vnode1.vkey === vnode2.vkey) {
+      if ('slot' === vnode1.vtag) return vnode1.vname === vnode2.vname;
+      return true;
+    }
+    return false;
+  };
   const referenceNode = node => {
     if (node && node['s-ol']) 
     // this node was relocated to a new location in the dom
@@ -274,7 +540,7 @@ const createRendererPatch = (plt, domApi) => {
   };
   const patchVNode = (oldVNode, newVNode, defaultHolder) => {
     const elm = newVNode.elm = oldVNode.elm;
-    oldVNode.vchildren;
+    const oldChildren = oldVNode.vchildren;
     const newChildren = newVNode.vchildren;
     // test if we're rendering an svg element, or still rendering nodes inside of one
     // only add this to the when the compiler sees we're using an svg somewhere
@@ -291,9 +557,51 @@ const createRendererPatch = (plt, domApi) => {
     // either this is the first render of an element OR it's an update
     // AND we already know it's possible it could have changed
     // this updates the element's css classes, attrs, props, listeners, etc.
-    updateElement(plt, oldVNode, newVNode, isSvgMode), isDef(newChildren) && 
+    updateElement(plt, oldVNode, newVNode, isSvgMode), isDef(oldChildren) && isDef(newChildren) ? 
+    // looks like there's child vnodes for both the old and new vnodes
+    ((parentElm, oldCh, newVNode, newCh, idxInOld, i, node, elmToMove) => {
+      let oldStartIdx = 0, newStartIdx = 0;
+      let oldEndIdx = oldCh.length - 1;
+      let oldStartVnode = oldCh[0];
+      let oldEndVnode = oldCh[oldEndIdx];
+      let newEndIdx = newCh.length - 1;
+      let newStartVnode = newCh[0];
+      let newEndVnode = newCh[newEndIdx];
+      while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) if (null == oldStartVnode) 
+      // Vnode might have been moved left
+      oldStartVnode = oldCh[++oldStartIdx]; else if (null == oldEndVnode) oldEndVnode = oldCh[--oldEndIdx]; else if (null == newStartVnode) newStartVnode = newCh[++newStartIdx]; else if (null == newEndVnode) newEndVnode = newCh[--newEndIdx]; else if (isSameVnode(oldStartVnode, newStartVnode)) patchVNode(oldStartVnode, newStartVnode), 
+      oldStartVnode = oldCh[++oldStartIdx], newStartVnode = newCh[++newStartIdx]; else if (isSameVnode(oldEndVnode, newEndVnode)) patchVNode(oldEndVnode, newEndVnode), 
+      oldEndVnode = oldCh[--oldEndIdx], newEndVnode = newCh[--newEndIdx]; else if (isSameVnode(oldStartVnode, newEndVnode)) 
+      // Vnode moved right
+      'slot' !== oldStartVnode.vtag && 'slot' !== newEndVnode.vtag || putBackInOriginalLocation(domApi.$parentNode(oldStartVnode.elm)), 
+      patchVNode(oldStartVnode, newEndVnode), domApi.$insertBefore(parentElm, oldStartVnode.elm, domApi.$nextSibling(oldEndVnode.elm)), 
+      oldStartVnode = oldCh[++oldStartIdx], newEndVnode = newCh[--newEndIdx]; else if (isSameVnode(oldEndVnode, newStartVnode)) 
+      // Vnode moved left
+      'slot' !== oldStartVnode.vtag && 'slot' !== newEndVnode.vtag || putBackInOriginalLocation(domApi.$parentNode(oldEndVnode.elm)), 
+      patchVNode(oldEndVnode, newStartVnode), domApi.$insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm), 
+      oldEndVnode = oldCh[--oldEndIdx], newStartVnode = newCh[++newStartIdx]; else {
+        for (
+        // createKeyToOldIdx
+        idxInOld = null, i = oldStartIdx; i <= oldEndIdx; ++i) if (oldCh[i] && isDef(oldCh[i].vkey) && oldCh[i].vkey === newStartVnode.vkey) {
+          idxInOld = i;
+          break;
+        }
+        isDef(idxInOld) ? (elmToMove = oldCh[idxInOld], elmToMove.vtag !== newStartVnode.vtag ? node = createElm(oldCh && oldCh[newStartIdx], newVNode, idxInOld, parentElm) : (patchVNode(elmToMove, newStartVnode), 
+        oldCh[idxInOld] = void 0, node = elmToMove.elm), newStartVnode = newCh[++newStartIdx]) : (
+        // new element
+        node = createElm(oldCh && oldCh[newStartIdx], newVNode, newStartIdx, parentElm), 
+        newStartVnode = newCh[++newStartIdx]), node && domApi.$insertBefore(parentReferenceNode(oldStartVnode.elm), node, referenceNode(oldStartVnode.elm));
+      }
+      oldStartIdx > oldEndIdx ? addVnodes(parentElm, null == newCh[newEndIdx + 1] ? null : newCh[newEndIdx + 1].elm, newVNode, newCh, newStartIdx, newEndIdx) : newStartIdx > newEndIdx && removeVnodes(oldCh, oldStartIdx, oldEndIdx);
+    })(elm, oldChildren, newVNode, newChildren) : isDef(newChildren) ? (
+    // no old child vnodes, but there are new child vnodes to add
+    isDef(oldVNode.vtext) && 
+    // the old vnode was text, so be sure to clear it out
+    domApi.$setTextContent(elm, ''), 
     // add the new vnode children
-    addVnodes(elm, null, newVNode, newChildren, 0, newChildren.length - 1)), 
+    addVnodes(elm, null, newVNode, newChildren, 0, newChildren.length - 1)) : isDef(oldChildren) && 
+    // no new child vnodes, but there are old child vnodes to remove
+    removeVnodes(oldChildren, 0, oldChildren.length - 1)), 
     // reset svgMode when svg node is fully patched
     isSvgMode && 'svg' === newVNode.vtag && (isSvgMode = false);
   };
@@ -409,20 +717,60 @@ const callNodeRefs = (vNode, isDestroy) => {
 
 const createQueueClient = (App, win) => {
   {
+    let congestion = 0;
+    let rafPending = false;
+    const now = () => win.performance.now();
+    const async = false !== App.asyncQueue;
     const resolved = Promise.resolve();
-    const tick = cb => {
-      resolved.then(() => {
-        try {
-          cb(win.performance.now());
-        } catch (e) {
-          console.error(e);
-        }
-      });
+    const highPriority = [];
+    const domReads = [];
+    const domWrites = [];
+    const domWritesLow = [];
+    const queueTask = queue => cb => {
+      // queue dom reads
+      queue.push(cb), rafPending || (rafPending = true, App.raf(flush));
     };
-    return {
-      tick,
-      read: tick,
-      write: tick
+    const consume = queue => {
+      for (let i = 0; i < queue.length; i++) try {
+        queue[i](now());
+      } catch (e) {
+        console.error(e);
+      }
+      queue.length = 0;
+    };
+    const consumeTimeout = (queue, timeout) => {
+      let i = 0;
+      let ts;
+      while (i < queue.length && (ts = now()) < timeout) try {
+        queue[i++](ts);
+      } catch (e) {
+        console.error(e);
+      }
+      i === queue.length ? queue.length = 0 : 0 !== i && queue.splice(0, i);
+    };
+    const flush = () => {
+      congestion++, 
+      // always force a bunch of medium callbacks to run, but still have
+      // a throttle on how many can run in a certain time
+      // DOM READS!!!
+      consume(domReads);
+      const timeout = async ? now() + 7 * Math.ceil(congestion * (1 / 22)) : Infinity;
+      // DOM WRITES!!!
+            consumeTimeout(domWrites, timeout), consumeTimeout(domWritesLow, timeout), 
+      domWrites.length > 0 && (domWritesLow.push(...domWrites), domWrites.length = 0), 
+      (rafPending = domReads.length + domWrites.length + domWritesLow.length > 0) ? 
+      // still more to do yet, but we've run out of time
+      // let's let this thing cool off and try again in the next tick
+      App.raf(flush) : congestion = 0;
+    };
+    return App.raf || (App.raf = win.requestAnimationFrame.bind(win)), {
+      tick(cb) {
+        // queue high priority work to happen in next tick
+        // uses Promise.resolve() for next tick
+        highPriority.push(cb), 1 === highPriority.length && resolved.then(() => consume(highPriority));
+      },
+      read: queueTask(domReads),
+      write: queueTask(domWrites)
     };
   }
 };
@@ -622,12 +970,13 @@ const utils = {
 };
 
 const initHostSnapshot = (domApi, cmpMeta, hostElm, hostSnapshot, attribName) => {
+  if (
   // the host element has connected to the dom
   // and we've waited a tick to make sure all frameworks
   // have finished adding attributes and child nodes to the host
   // before we go all out and hydrate this beast
   // let's first take a snapshot of its original layout before render
-  return hostElm.mode || (
+  hostElm.mode || (
   // looks like mode wasn't set as a property directly yet
   // first check if there's an attribute
   // next check the app's global
@@ -643,7 +992,14 @@ const initHostSnapshot = (domApi, cmpMeta, hostElm, hostSnapshot, attribName) =>
   // create a node to represent where the original
   // content was first placed, which is useful later on
   hostElm['s-cr'] = domApi.$createTextNode(''), hostElm['s-cr']['s-cn'] = true, domApi.$insertBefore(hostElm, hostElm['s-cr'], domApi.$childNodes(hostElm)[0])), 
-  1 /* ShadowDom */ === cmpMeta.encapsulationMeta && domApi.$supportsShadowDom && !hostElm.shadowRoot && 
+  !domApi.$supportsShadowDom && 1 /* ShadowDom */ === cmpMeta.encapsulationMeta) 
+  // this component should use shadow dom
+  // but this browser doesn't support it
+  // so let's polyfill a few things for the user
+  try {
+    !window.HTMLElement || 'shadowRoot' in window.HTMLElement.prototype || (hostElm.shadowRoot = hostElm);
+  } catch (e) {}
+  return 1 /* ShadowDom */ === cmpMeta.encapsulationMeta && domApi.$supportsShadowDom && !hostElm.shadowRoot && 
   // this component is using shadow dom
   // and this browser supports shadow dom
   // add the read-only property "shadowRoot" to the host element
@@ -654,7 +1010,12 @@ const initHostSnapshot = (domApi, cmpMeta, hostElm, hostSnapshot, attribName) =>
   // use to store all host data about to be read later
   hostSnapshot = {
     $attributes: {}
-  }, hostSnapshot;
+  }, 
+  // loop through and gather up all the original attributes on the host
+  // this is useful later when we're creating the component instance
+  cmpMeta.membersMeta && Object.keys(cmpMeta.membersMeta).forEach(memberName => {
+    (attribName = cmpMeta.membersMeta[memberName].attribName) && (hostSnapshot.$attributes[attribName] = domApi.$getAttribute(hostElm, attribName));
+  }), hostSnapshot;
 };
 
 const registerWithParentComponent = (plt, elm, ancestorHostElement) => {
@@ -691,6 +1052,13 @@ const parseComponentLoader = (cmpRegistryData, i, cmpData) => {
       attribName: 'color'
     }
   };
+  if (memberData) for (i = 0; i < memberData.length; i++) cmpData = memberData[i], 
+  membersMeta[cmpData[0]] = {
+    memberType: cmpData[1],
+    reflectToAttrib: !!cmpData[2],
+    attribName: 'string' === typeof cmpData[3] ? cmpData[3] : cmpData[3] ? cmpData[0] : 0,
+    propType: cmpData[4]
+  };
   return {
     tagNameMeta,
     // map of the bundle ids
@@ -711,6 +1079,39 @@ const parseListenerData = listenerData => ({
   eventPassive: !!listenerData[3],
   eventCapture: !!listenerData[4]
 });
+
+const parsePropertyValue = (propType, propValue) => {
+  // ensure this value is of the correct prop type
+  // we're testing both formats of the "propType" value because
+  // we could have either gotten the data from the attribute changed callback,
+  // which wouldn't have Constructor data yet, and because this method is reused
+  // within proxy where we don't have meta data, but only constructor data
+  if (isDef(propValue) && 'object' !== typeof propValue && 'function' !== typeof propValue) {
+    if (propType === Boolean || 4 /* Boolean */ === propType) 
+    // per the HTML spec, any string value means it is a boolean true value
+    // but we'll cheat here and say that the string "false" is the boolean false
+    return 'false' !== propValue && ('' === propValue || !!propValue);
+    if (propType === Number || 8 /* Number */ === propType) 
+    // force it to be a number
+    return parseFloat(propValue);
+    if (propType === String || 2 /* String */ === propType) 
+    // could have been passed as a number or boolean
+    // but we still want it as a string
+    return propValue.toString();
+    // redundant return here for better minification
+        return propValue;
+  }
+  // not sure exactly what type we want
+  // so no need to change to a different type
+    return propValue;
+};
+
+const reflectInstanceValuesToHostAttributes = (properties, instance, reflectHostAttr) => {
+  return properties && Object.keys(properties).forEach(memberName => {
+    properties[memberName].reflectToAttr && (reflectHostAttr = reflectHostAttr || {}, 
+    reflectHostAttr[memberName] = instance[memberName]);
+  }), reflectHostAttr;
+};
 
 const queueUpdate = (plt, elm, perf) => {
   // we're actively processing this component
@@ -749,8 +1150,29 @@ const update = async (plt, elm, perf, isInitialLoad, instance, ancestorHostEleme
       // haven't created a component instance for this host element yet!
       // create the instance from the user's component class
       // https://www.youtube.com/watch?v=olLxrojmvMg
-            instance = initComponentInstance(plt, elm, plt.hostSnapshotMap.get(elm), perf);
-    } else false;
+            if (instance = initComponentInstance(plt, elm, plt.hostSnapshotMap.get(elm), perf), 
+      instance) 
+      // this is the initial load and the instance was just created
+      // fire off the user's componentWillLoad method (if one was provided)
+      // componentWillLoad only runs ONCE, after instance's element has been
+      // assigned as the host element, but BEFORE render() has been called
+      try {
+        instance.componentWillLoad && await instance.componentWillLoad();
+      } catch (e) {
+        plt.onError(e, 3 /* WillLoadError */ , elm);
+      }
+    } else if (instance) 
+    // component already initialized, this is an update
+    // already created an instance and this is an update
+    // fire off the user's componentWillUpdate method (if one was provided)
+    // componentWillUpdate runs BEFORE render() has been called
+    // but only BEFORE an UPDATE and not before the intial render
+    // get the returned promise (if one was provided)
+    try {
+      instance.componentWillUpdate && await instance.componentWillUpdate();
+    } catch (e) {
+      plt.onError(e, 5 /* WillUpdateError */ , elm);
+    }
     // if this component has a render function, let's fire
     // it off and generate a vnode for this
         ((plt, cmpMeta, hostElm, instance, perf) => {
@@ -765,7 +1187,7 @@ const update = async (plt, elm, perf, isInitialLoad, instance, ancestorHostEleme
                 const useNativeShadowDom = 'shadow' === encapsulation && plt.domApi.$supportsShadowDom;
         let reflectHostAttr;
         let rootElm = hostElm;
-        if (
+        if (reflectHostAttr = reflectInstanceValuesToHostAttributes(cmpMeta.componentConstructor.properties, instance), 
         // this component SHOULD use native slot/shadow dom
         // this browser DOES support native shadow dom
         // and this is the first render
@@ -787,6 +1209,18 @@ const update = async (plt, elm, perf, isInitialLoad, instance, ancestorHostEleme
           plt.activeRender = true;
           const vnodeChildren = instance.render && instance.render();
           let vnodeHostData;
+          if (
+          // user component provided a "hostData()" method
+          // the returned data/attributes are used on the host element
+          vnodeHostData = instance.hostData && instance.hostData(), vnodeHostData && cmpMeta.membersMeta) {
+            const foundHostKeys = Object.keys(vnodeHostData).reduce((err, k) => {
+              if (cmpMeta.membersMeta[k]) return err.concat(k);
+              if (cmpMeta.membersMeta[dashToPascalCase(k)]) return err.concat(dashToPascalCase(k));
+              return err;
+            }, []);
+            if (foundHostKeys.length > 0) throw new Error('The following keys were attempted to be set with hostData() from the ' + `${cmpMeta.tagNameMeta} component: ${foundHostKeys.join(', ')}. ` + 'If you would like to modify these please set @Prop({ mutable: true, reflectToAttr: true}) on the @Prop() decorator.');
+          }
+          reflectHostAttr && (vnodeHostData = vnodeHostData ? Object.assign(vnodeHostData, reflectHostAttr) : reflectHostAttr), 
           // tell the platform we're done rendering
           // now any changes will again queue
           plt.activeRender = false;
@@ -797,6 +1231,8 @@ const update = async (plt, elm, perf, isInitialLoad, instance, ancestorHostEleme
           // if this is a re-render, then give the renderer the last vnode we already created
                     const oldVNode = plt.vnodeMap.get(hostElm) || {};
           oldVNode.elm = rootElm, 
+          // only care if we're reflecting values to the host element
+          hostVNode.ishost = true, 
           // each patch always gets a new vnode
           // the host element itself isn't patched because it already exists
           // kick off the actual render and any DOM updates
@@ -817,6 +1253,112 @@ const update = async (plt, elm, perf, isInitialLoad, instance, ancestorHostEleme
     elm['s-init'](), elm['s-hmr-load'] && elm['s-hmr-load']();
   }
 };
+
+const defineMember = (plt, property, elm, instance, memberName, hostSnapshot, perf, hostAttributes, hostAttrValue) => {
+  if (property.type || property.state) {
+    const values = plt.valuesMap.get(elm);
+    !property.state && true && (!property.attr || void 0 !== values[memberName] && '' !== values[memberName] || 
+    // check the prop value from the host element attribute
+    (hostAttributes = hostSnapshot && hostSnapshot.$attributes) && isDef(hostAttrValue = hostAttributes[property.attr]) && (
+    // looks like we've got an attribute value
+    // let's set it to our internal values
+    values[memberName] = parsePropertyValue(property.type, hostAttrValue)), 
+    // client-side
+    // within the browser, the element's prototype
+    // already has its getter/setter set, but on the
+    // server the prototype is shared causing issues
+    // so instead the server's elm has the getter/setter
+    // directly on the actual element instance, not its prototype
+    // so on the browser we can use "hasOwnProperty"
+    elm.hasOwnProperty(memberName) && (
+    // @Prop or @Prop({mutable:true})
+    // property values on the host element should override
+    // any default values on the component instance
+    void 0 === values[memberName] && (values[memberName] = parsePropertyValue(property.type, elm[memberName])), 
+    // for the client only, let's delete its "own" property
+    // this way our already assigned getter/setter on the prototype kicks in
+    // the very special case is to NOT do this for "mode"
+    'mode' !== memberName && delete elm[memberName])), instance.hasOwnProperty(memberName) && void 0 === values[memberName] && (
+    // @Prop() or @Prop({mutable:true}) or @State()
+    // we haven't yet got a value from the above checks so let's
+    // read any "own" property instance values already set
+    // to our internal value as the source of getter data
+    // we're about to define a property and it'll overwrite this "own" property
+    values[memberName] = instance[memberName]), property.watchCallbacks && (values[WATCH_CB_PREFIX + memberName] = property.watchCallbacks.slice()), 
+    // add getter/setter to the component instance
+    // these will be pointed to the internal data set from the above checks
+    definePropertyGetterSetter(instance, memberName, function getComponentProp(values) {
+      // component instance prop/state getter
+      // get the property value directly from our internal values
+      return values = plt.valuesMap.get(plt.hostElementMap.get(this)), values && values[memberName];
+    }, function setComponentProp(newValue, elm) {
+      // component instance prop/state setter (cannot be arrow fn)
+      elm = plt.hostElementMap.get(this), elm && (property.state || property.mutable ? setValue(plt, elm, memberName, newValue, perf) : console.warn(`@Prop() "${memberName}" on "${elm.tagName}" cannot be modified.`));
+    });
+  } else if (property.elementRef) 
+  // @Element()
+  // add a getter to the element reference using
+  // the member name the component meta provided
+  definePropertyValue(instance, memberName, elm); else if (property.method) 
+  // @Method()
+  // add a property "value" on the host element
+  // which we'll bind to the instance's method
+  definePropertyValue(elm, memberName, instance[memberName].bind(instance)); else if (property.context) {
+    // @Prop({ context: 'config' })
+    const contextObj = plt.getContextItem(property.context);
+    void 0 !== contextObj && definePropertyValue(instance, memberName, contextObj.getContext && contextObj.getContext(elm) || contextObj);
+  } else false;
+};
+
+const setValue = (plt, elm, memberName, newVal, perf, instance, values) => {
+  // get the internal values object, which should always come from the host element instance
+  // create the _values object if it doesn't already exist
+  values = plt.valuesMap.get(elm), values || plt.valuesMap.set(elm, values = {});
+  const oldVal = values[memberName];
+  // check our new property value against our internal value
+    if (newVal !== oldVal && (
+  // gadzooks! the property's value has changed!!
+  // set our new value!
+  // https://youtu.be/dFtLONl4cNc?t=22
+  values[memberName] = newVal, instance = plt.instanceMap.get(elm), instance)) {
+    {
+      const watchMethods = values[WATCH_CB_PREFIX + memberName];
+      if (watchMethods) 
+      // this instance is watching for when this property changed
+      for (let i = 0; i < watchMethods.length; i++) try {
+        // fire off each of the watch methods that are watching this property
+        instance[watchMethods[i]].call(instance, newVal, oldVal, memberName);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    !plt.activeRender && elm['s-rn'] && 
+    // looks like this value actually changed, so we've got work to do!
+    // but only if we've already rendered, otherwise just chill out
+    // queue that we need to do an update, but don't worry about queuing
+    // up millions cuz this function ensures it only runs once
+    queueUpdate(plt, elm, perf);
+  }
+};
+
+const definePropertyValue = (obj, propertyKey, value) => {
+  // minification shortcut
+  Object.defineProperty(obj, propertyKey, {
+    configurable: true,
+    value
+  });
+};
+
+const definePropertyGetterSetter = (obj, propertyKey, get, set) => {
+  // minification shortcut
+  Object.defineProperty(obj, propertyKey, {
+    configurable: true,
+    get,
+    set
+  });
+};
+
+const WATCH_CB_PREFIX = 'wc-';
 
 const initComponentInstance = (plt, elm, hostSnapshot, perf, instance, componentConstructor, queuedEvents, i) => {
   try {
@@ -847,8 +1389,48 @@ const initComponentInstance = (plt, elm, hostSnapshot, perf, instance, component
         mode: {
           type: String
         }
-      })).forEach(([memberName, property]) => {});
-    })(plt, componentConstructor, elm, instance);
+      })).forEach(([memberName, property]) => {
+        // define each of the members and initialize what their role is
+        defineMember(plt, property, elm, instance, memberName, hostSnapshot, perf);
+      });
+    })(plt, componentConstructor, elm, instance, hostSnapshot, perf), 
+    // add each of the event emitters which wire up instance methods
+    // to fire off dom events from the host element
+    function initEventEmitters(plt, cmpEvents, instance) {
+      if (cmpEvents) {
+        const elm = plt.hostElementMap.get(instance);
+        cmpEvents.forEach(eventMeta => {
+          instance[eventMeta.method] = {
+            emit: data => plt.emitEvent(elm, eventMeta.name, {
+              bubbles: eventMeta.bubbles,
+              composed: eventMeta.composed,
+              cancelable: eventMeta.cancelable,
+              detail: data
+            })
+          };
+        });
+      }
+    }(plt, componentConstructor.events, instance);
+    try {
+      if (
+      // replay any event listeners on the instance that
+      // were queued up between the time the element was
+      // connected and before the instance was ready
+      queuedEvents = plt.queuedEvents.get(elm), queuedEvents) {
+        // events may have already fired before the instance was even ready
+        // now that the instance is ready, let's replay all of the events that
+        // we queued up earlier that were originally meant for the instance
+        for (i = 0; i < queuedEvents.length; i += 2) 
+        // data was added in sets of two
+        // first item the eventMethodName
+        // second item is the event data
+        // take a look at initElementListener()
+        instance[queuedEvents[i]](queuedEvents[i + 1]);
+        plt.queuedEvents.delete(elm);
+      }
+    } catch (e) {
+      plt.onError(e, 2 /* QueueEventsError */ , elm);
+    }
   } catch (e) {
     // something done went wrong trying to create a component instance
     // create a dumby instance so other stuff can load
@@ -931,13 +1513,43 @@ function hmrStart(plt, cmpMeta, elm, hmrVersionId) {
   plt.requestBundle(cmpMeta, elm, hmrVersionId);
 }
 
+const proxyHostElementPrototype = (plt, membersEntries, hostPrototype, perf) => {
+  membersEntries.forEach(([memberName, member]) => {
+    // add getters/setters
+    const memberType = member.memberType;
+    3 /* PropMutable */ & memberType && true ? 
+    // @Prop() or @Prop({ mutable: true })
+    definePropertyGetterSetter(hostPrototype, memberName, function getHostElementProp() {
+      // host element getter (cannot be arrow fn)
+      // yup, ugly, srynotsry
+      return (plt.valuesMap.get(this) || {})[memberName];
+    }, function setHostElementProp(newValue) {
+      // host element setter (cannot be arrow fn)
+      setValue(plt, this, memberName, parsePropertyValue(member.propType, newValue), perf);
+    }) : 32 /* Method */ === memberType && 
+    // @Method()
+    // add a placeholder noop value on the host element's prototype
+    // incase this method gets called before setup
+    definePropertyValue(hostPrototype, memberName, noop);
+  });
+};
+
 const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass, perf) => {
+  if (
   // let's wire up our functions to the host element's prototype
   // we can also inject our platform into each one that needs that api
   // note: these cannot be arrow functions cuz "this" is important here hombre
   HostElementConstructor.connectedCallback = function() {
     // coolsville, our host element has just hit the DOM
     ((plt, cmpMeta, elm, perf) => {
+      // initialize our event listeners on the host element
+      // we do this now so that we can listening to events that may
+      // have fired even before the instance is ready
+      plt.hasListenersMap.has(elm) || (
+      // it's possible we've already connected
+      // then disconnected
+      // and the same element is reconnected again
+      plt.hasListenersMap.set(elm, true), initElementListeners(plt, elm)), 
       // this element just connected, which may be re-connecting
       // ensure we remove it from our map of disconnected
       plt.isDisconnectedMap.delete(elm), plt.hasConnectedMap.has(elm) || (plt.hasConnectedComponent = true, 
@@ -963,25 +1575,34 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
     ((plt, elm, perf) => {
       // only disconnect if we're not temporarily disconnected
       // tmpDisconnected will happen when slot nodes are being relocated
-      !plt.tmpDisconnected && isDisconnected(plt.domApi, elm) && (
-      // ok, let's officially destroy this thing
-      // set this to true so that any of our pending async stuff
-      // doesn't continue since we already decided to destroy this node
-      // elm._hasDestroyed = true;
-      plt.isDisconnectedMap.set(elm, true), 
-      // double check that we've informed the ancestor host elements
-      // that they're good to go and loaded (cuz this one is on its way out)
-      propagateComponentReady(plt, elm), 
-      // since we're disconnecting, call all of the JSX ref's with null
-      callNodeRefs(plt.vnodeMap.get(elm), true), 
-      // detatch any event listeners that may have been added
-      // because we're not passing an exact event name it'll
-      // remove all of this element's event, which is good
-      plt.domApi.$removeEventListener(elm), plt.hasListenersMap.delete(elm), 
-      // clear any references to other elements
-      // more than likely we've already deleted these references
-      // but let's double check there pal
-      [ plt.ancestorHostElementMap, plt.onReadyCallbacksMap, plt.hostSnapshotMap ].forEach(wm => wm.delete(elm)));
+      if (!plt.tmpDisconnected && isDisconnected(plt.domApi, elm)) {
+        // ok, let's officially destroy this thing
+        // set this to true so that any of our pending async stuff
+        // doesn't continue since we already decided to destroy this node
+        // elm._hasDestroyed = true;
+        plt.isDisconnectedMap.set(elm, true), 
+        // double check that we've informed the ancestor host elements
+        // that they're good to go and loaded (cuz this one is on its way out)
+        propagateComponentReady(plt, elm), 
+        // since we're disconnecting, call all of the JSX ref's with null
+        callNodeRefs(plt.vnodeMap.get(elm), true);
+        {
+          // call instance componentDidUnload
+          // if we've created an instance for this
+          const instance = plt.instanceMap.get(elm);
+          instance && instance.componentDidUnload && 
+          // call the user's componentDidUnload if there is one
+          instance.componentDidUnload();
+        }
+        // detatch any event listeners that may have been added
+        // because we're not passing an exact event name it'll
+        // remove all of this element's event, which is good
+                plt.domApi.$removeEventListener(elm), plt.hasListenersMap.delete(elm), 
+        // clear any references to other elements
+        // more than likely we've already deleted these references
+        // but let's double check there pal
+        [ plt.ancestorHostElementMap, plt.onReadyCallbacksMap, plt.hostSnapshotMap ].forEach(wm => wm.delete(elm));
+      }
     })(plt, this);
   }, HostElementConstructor['s-init'] = function() {
     ((plt, elm, hydratedCssClass, perf, instance, onReadyCallbacks, hasCmpLoaded) => {
@@ -1007,7 +1628,7 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
           // fire off the user's elm.componentOnReady() callbacks that were
           // put directly on the element (well before anything was ready)
           (onReadyCallbacks = plt.onReadyCallbacksMap.get(elm)) && (onReadyCallbacks.forEach(cb => cb(elm)), 
-          plt.onReadyCallbacksMap.delete(elm)), !hasCmpLoaded && instance.componentDidLoad && instance.componentDidLoad();
+          plt.onReadyCallbacksMap.delete(elm)), !hasCmpLoaded && instance.componentDidLoad ? instance.componentDidLoad() : hasCmpLoaded && instance.componentDidUpdate && instance.componentDidUpdate();
         } catch (e) {
           plt.onError(e, 4 /* DidLoadError */ , elm);
         }
@@ -1023,7 +1644,30 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
     queueUpdate(plt, this, perf);
   }, HostElementConstructor['s-hmr'] = function(hmrVersionId) {
     hmrStart(plt, cmpMeta, this, hmrVersionId);
-  };
+  }, cmpMeta.membersMeta) {
+    const entries = Object.entries(cmpMeta.membersMeta);
+    {
+      let attrToProp = {};
+      entries.forEach(([propName, {attribName}]) => {
+        attribName && (attrToProp[attribName] = propName);
+      }), attrToProp = Object.assign({}, attrToProp), HostElementConstructor.attributeChangedCallback = function(attribName, _oldVal, newVal) {
+        // the browser has just informed us that an attribute
+        // on the host element has changed
+        (function attributeChangedCallback(attrPropsMap, elm, attribName, newVal) {
+          // look up to see if we have a property wired up to this attribute name
+          const propName = attrPropsMap[toLowerCase(attribName)];
+          propName && (
+          // there is not need to cast the value since, it's already casted when
+          // the prop is setted
+          elm[propName] = (null !== newVal || 'boolean' !== typeof elm[propName]) && newVal);
+        })(attrToProp, this, attribName, newVal);
+      };
+    }
+    // add getters/setters to the host element members
+    // these would come from the @Prop and @Method decorators that
+    // should create the public API to this component
+        proxyHostElementPrototype(plt, entries, HostElementConstructor, perf);
+  }
 };
 
 // esm build which uses es module imports and dynamic imports
@@ -1084,9 +1728,29 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
         assignersEventName = eventName + assignerId, assignersUnregListeners && assignersUnregListeners[assignersEventName] && 
         // removed any existing listeners for this event for the assigner element
         // this element already has this listener, so let's unregister it now
-        assignersUnregListeners[assignersEventName](), 'object' === typeof attachTo && (
+        assignersUnregListeners[assignersEventName](), 'string' === typeof attachTo ? 
+        // attachTo is a string, and is probably something like
+        // "parent", "window", or "document"
+        // and the eventName would be like "mouseover" or "mousemove"
+        attachToElm = domApi.$elementRef(assignerElm, attachTo) : 'object' === typeof attachTo ? 
         // we were passed in an actual element to attach to
-        attachToElm = attachTo), attachToElm && (
+        attachToElm = attachTo : (
+        // depending on the event name, we could actually be attaching
+        // this element to something like the document or window
+        splt = eventName.split(':'), splt.length > 1 && (
+        // document:mousemove
+        // parent:touchend
+        // body:keyup.enter
+        attachToElm = domApi.$elementRef(assignerElm, splt[0]), eventName = splt[1])), attachToElm && (
+        // test to see if we're looking for an exact keycode
+        splt = eventName.split('.'), splt.length > 1 && (
+        // looks like this listener is also looking for a keycode
+        // keyup.enter
+        eventName = splt[0], eventListener = (ev => {
+          // wrap the user's event listener with our own check to test
+          // if this keyboard event has the keycode they're looking for
+          ev.keyCode === KEY_CODE_MAP[splt[1]] && listenerCallback(ev);
+        })), 
         // create the actual event listener options to use
         // this browser may not support event options
         eventListenerOpts = domApi.$supportsEventOptions ? {
@@ -1126,14 +1790,20 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
       // otherwise use the parent node
       (parentNode = domApi.$parentNode(elm)) && 11 /* DocumentFragment */ === domApi.$nodeType(parentNode) ? parentNode.host : parentNode
     };
-    return domApi.$setAttributeNS = ((elm, namespaceURI, qualifiedName, val) => elm.setAttributeNS(namespaceURI, qualifiedName, val)), 
+    domApi.$setAttributeNS = ((elm, namespaceURI, qualifiedName, val) => elm.setAttributeNS(namespaceURI, qualifiedName, val)), 
     domApi.$attachShadow = ((elm, shadowRootInit) => elm.attachShadow(shadowRootInit)), 
     win.location.search.indexOf('shadow=false') > 0 && (
     // by adding ?shadow=false it'll force the slot polyfill
     // only add this check when in dev mode
     domApi.$supportsShadowDom = false), App.ael || (App.ael = ((elm, eventName, cb, opts) => elm.addEventListener(eventName, cb, opts)), 
-    App.rel = ((elm, eventName, cb, opts) => elm.removeEventListener(eventName, cb, opts))), 
-    domApi;
+    App.rel = ((elm, eventName, cb, opts) => elm.removeEventListener(eventName, cb, opts)));
+    // test if this browser supports event options or not
+    try {
+      win.addEventListener('e', null, Object.defineProperty({}, 'passive', {
+        get: () => domApi.$supportsEventOptions = true
+      }));
+    } catch (e) {}
+    return domApi;
   })(App, win, doc);
   const rootElm = domApi.$doc.documentElement;
   // keep a global set of tags we've already defined
@@ -1144,6 +1814,13 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
     // initialize the members on the host element prototype
     // keep a ref to the metadata with the tag as the key
     initHostElement(plt, cmpRegistry[cmpMeta.tagNameMeta] = cmpMeta, HostElementConstructor.prototype, hydratedCssClass, perf), 
+    // add which attributes should be observed
+    // at this point the membersMeta only includes attributes which should
+    // be observed, it does not include all props yet, so it's safe to
+    // loop through all of the props (attrs) and observed them
+    // set the array of all the attributes to keep an eye on
+    // https://www.youtube.com/watch?v=RBs21CFBALI
+    HostElementConstructor.observedAttributes = Object.values(cmpMeta.membersMeta).map(member => member.attribName).filter(attribName => !!attribName), 
     win.customElements.define(cmpMeta.tagNameMeta, HostElementConstructor));
   };
   // create the platform api which is used throughout common core code
@@ -1155,14 +1832,14 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
     isClient: true,
     isDefinedComponent: elm => !!(globalDefined[domApi.$tagName(elm)] || plt.getComponentMeta(elm)),
     onError: (err, type, elm) => console.error(err, type, elm && elm.tagName),
-    queue: Context.queue = createQueueClient(0, win),
+    queue: Context.queue = createQueueClient(App, win),
     requestBundle: (cmpMeta, elm, hmrVersionId) => {
       {
         // self loading module using built-in browser's import()
         // this is when not using a 3rd party bundler
         // and components are able to lazy load themselves
         // through standardized browser APIs
-        const bundleId = cmpMeta.bundleIds;
+        const bundleId = 'string' !== typeof cmpMeta.bundleIds ? cmpMeta.bundleIds[elm.mode] : cmpMeta.bundleIds;
         const useScopedCss = !domApi.$supportsShadowDom;
         let url = resourcesUrl + bundleId + (useScopedCss ? '.sc' : '') + '.entry.js';
         hmrVersionId && (url += '?s-hmr=' + hmrVersionId), 
@@ -1211,6 +1888,26 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
   // set App Context
   Context.isServer = Context.isPrerender = !(Context.isClient = true), Context.window = win, 
   Context.location = win.location, Context.document = doc, Context.resourcesUrl = Context.publicPath = resourcesUrl, 
+  Context.enableListener = ((instance, eventName, enabled, attachTo, passive) => (function enableEventListener(plt, instance, eventName, shouldEnable, attachTo, passive) {
+    if (instance) {
+      // cool, we've got an instance, it's get the element it's on
+      const elm = plt.hostElementMap.get(instance);
+      const cmpMeta = plt.getComponentMeta(elm);
+      if (cmpMeta && cmpMeta.listenersMeta) 
+      // alrighty, so this cmp has listener meta
+      if (shouldEnable) {
+        // we want to enable this event
+        // find which listen meta we're talking about
+        const listenMeta = cmpMeta.listenersMeta.find(l => l.eventName === eventName);
+        listenMeta && 
+        // found the listen meta, so let's add the listener
+        plt.domApi.$addEventListener(elm, eventName, ev => instance[listenMeta.eventMethodName](ev), 1, listenMeta.eventCapture, void 0 === passive ? listenMeta.eventPassive : !!passive, attachTo);
+      } else 
+      // we're disabling the event listener
+      // so let's just remove it entirely
+      plt.domApi.$removeEventListener(elm, eventName, 1);
+    }
+  })(plt, instance, eventName, enabled, attachTo, passive)), plt.emitEvent = Context.emit = ((elm, eventName, data) => domApi.$dispatchEvent(elm, Context.eventNameFn ? Context.eventNameFn(eventName) : eventName, data)), 
   // add the h() fn to the app's global namespace
   App.h = h$1, App.Context = Context, 
   // create a method that returns a promise
@@ -1281,4 +1978,4 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
   // but note that the components have not fully loaded yet
   App.initialized = true;
 })(n, x, w, d, r, h, c);
-})(window,document,{},"App","hydrated",[["app-home","app-home",1,0,1]]);
+})(window,document,{},"App","hydrated",[["ion-app",{"ios":"main-app.ios","md":"main-app.md"},1,[["config",4,0,0,0,"config"],["el",64],["queue",4,0,0,0,"queue"],["win",4,0,0,0,"window"]]],["ion-card",{"ios":"main-app.ios","md":"main-app.md"},1,[["color",1,0,1,2],["mode",1,0,1,2]],2],["ion-card-content",{"ios":"main-app.ios","md":"main-app.md"},1,[["mode",1,0,1,2]]],["ion-card-header",{"ios":"main-app.ios","md":"main-app.md"},1,[["color",1,0,1,2],["mode",1,0,1,2],["translucent",1,0,1,4]],1],["ion-card-title",{"ios":"main-app.ios","md":"main-app.md"},1,[["color",1,0,1,2],["mode",1,0,1,2]],1],["ion-content",{"ios":"main-app.ios","md":"main-app.md"},1,[["color",1,0,1,2],["config",4,0,0,0,"config"],["el",64],["forceOverscroll",2,0,"force-overscroll",4],["fullscreen",1,0,1,4],["getScrollElement",32],["queue",4,0,0,0,"queue"],["scrollByPoint",32],["scrollEvents",1,0,"scroll-events",4],["scrollToBottom",32],["scrollToPoint",32],["scrollToTop",32],["scrollX",1,0,"scroll-x",4],["scrollY",1,0,"scroll-y",4],["win",4,0,0,0,"window"]],1,[["click","onClick",0,0,1]]],["ion-footer",{"ios":"main-app.ios","md":"main-app.md"},1,[["mode",1,0,1,2],["translucent",1,0,1,4]]],["ion-header",{"ios":"main-app.ios","md":"main-app.md"},1,[["mode",1,0,1,2],["translucent",1,0,1,4]]],["ion-icon",{"ios":"main-app.ios","md":"main-app.md"},1,[["ariaLabel",2,1,"aria-label",2],["color",1,0,1,2],["doc",4,0,0,0,"document"],["el",64],["flipRtl",1,0,"flip-rtl",4],["icon",1,0,1,2],["ios",1,0,1,2],["isServer",4,0,0,0,"isServer"],["isVisible",16],["lazy",1,0,1,4],["md",1,0,1,2],["mode",1,0,1,2],["name",1,0,1,2],["resourcesUrl",4,0,0,0,"resourcesUrl"],["size",1,0,1,2],["src",1,0,1,2],["svgContent",16],["win",4,0,0,0,"window"]],1],["ion-item",{"ios":"main-app.ios","md":"main-app.md"},1,[["button",1,0,1,4],["color",1,0,1,2],["detail",1,0,1,4],["detailIcon",1,0,"detail-icon",2],["disabled",1,0,1,4],["el",64],["href",1,0,1,2],["lines",1,0,1,2],["mode",1,0,1,2],["multipleInputs",16],["routerDirection",1,0,"router-direction",2],["type",1,0,1,2],["win",4,0,0,0,"window"]],1,[["ionStyle","itemStyle"]]],["ion-label",{"ios":"main-app.ios","md":"main-app.md"},1,[["color",1,0,1,2],["el",64],["mode",1,0,1,2],["noAnimate",16],["position",1,0,1,2]],2],["ion-list",{"ios":"main-app.ios","md":"main-app.md"},1,[["closeSlidingItems",32],["el",64],["inset",1,0,1,4],["lines",1,0,1,2],["mode",1,0,1,2]]],["ion-note",{"ios":"main-app.ios","md":"main-app.md"},1,[["color",1,0,1,2],["mode",1,0,1,2]],1],["ion-ripple-effect",{"ios":"main-app.ios","md":"main-app.md"},1,[["addRipple",32],["el",64],["queue",4,0,0,0,"queue"],["type",1,0,1,2],["win",4,0,0,0,"window"]],1],["ion-textarea",{"ios":"main-app.ios","md":"main-app.md"},1,[["autocapitalize",1,0,1,2],["autofocus",1,0,1,4],["clearOnEdit",2,0,"clear-on-edit",4],["color",1,0,1,2],["cols",1,0,1,8],["debounce",1,0,1,8],["disabled",1,0,1,4],["el",64],["getInputElement",32],["hasFocus",16],["maxlength",1,0,1,8],["minlength",1,0,1,8],["mode",1,0,1,2],["name",1,0,1,2],["placeholder",1,0,1,2],["readonly",1,0,1,4],["required",1,0,1,4],["rows",1,0,1,8],["setFocus",32],["spellcheck",1,0,1,4],["value",2,0,1,2],["wrap",1,0,1,2]],2],["ion-title",{"ios":"main-app.ios","md":"main-app.md"},1,[["color",1,0,1,2],["el",64]],1],["ion-toolbar",{"ios":"main-app.ios","md":"main-app.md"},1,[["color",1,0,1,2],["config",4,0,0,0,"config"],["el",64],["mode",1,0,1,2]],1,[["ionStyle","childrenStyle"]]],["main-app",{"ios":"main-app.ios","md":"main-app.md"},1,[["setTender",32],["store",4,0,0,0,"store"],["tender",16]],1]]);

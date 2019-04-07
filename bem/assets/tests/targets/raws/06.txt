@@ -1,0 +1,52 @@
+ Tender: ID 104325
+
+    View
+    Edit
+    Documents
+    Cancel
+
+Tender details
+Code 	4NTLHZTQ   [ Preview ]
+Status 	Online
+Client ID 	129785-2019
+Tender Date 	20/03/2019
+Deadline 	26/04/2019
+Source 	OJEU
+Type 	Architectural Services
+City 	Causeway Coast and Glens
+Country 	United Kingdom
+International 	No
+Posted by 	Causeway Coast and Glens Borough Council
+Language 	English
+Surface area 	
+Construction value 	181,302 GBP
+Service fee 	
+Contact name 	
+Telephone 	+44 7889081859
+Email 	environmentalservices@causewaycoastandglens.gov.uk
+Fax 	
+Url 	https://www.causewaycoastandglens.gov.uk/
+Click here 	http://ted.europa.eu/udl?uri=TED:NOTICE:129785-2019:TEXT:EN:HTML
+Display Click here in Description 	Yes
+Main sector 	Conservation
+Other sectors 	Civic buildings
+Email description 	Council spaces conservation
+Description
+
+Tender for Professional Consultancy Services — Conservation Architects
+
+Conservation architectural services:
+— conservation architectural consultancy, (with lead consultancy and principal designer role),
+— conservation architectural consultancy (non-lead consultancy and non-principal designer role).
+
+Value excluding VAT: 181 302.00 GBP
+
+Division into lots: no
+
+Main site or place of performance: Causeway Coast and Glens Borough Council.
+
+Type of procedure:
+Open.
+Premium Tender 	No 	
+Tender of the Week 	No 	
+Created on 	20/03/2019 4:50 PM GMT

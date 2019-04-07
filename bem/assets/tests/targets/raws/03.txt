@@ -1,0 +1,58 @@
+﻿ Tender: ID 104252
+
+    View
+    Edit
+    Documents
+    Cancel
+
+Tender details
+Code 	UZM2ZMMJ   [ Preview ]
+Status 	Pending
+Client ID 	126943-2019
+Deadline 	01/06/2019
+Source 	OJEU
+Type 	Pre-tender
+City 	Various
+Country 	United Kingdom
+International 	No
+Posted by 	Scotland Excel
+Language 	English
+Surface area 	
+Construction value 	40m GBP
+Service fee 	
+Contact name 	
+Telephone 	+44 3003001200
+Email 	construction@scotland-excel.org.uk
+Fax 	
+Url 	http://www.scotland-excel.org.uk
+Click here 	http://ted.europa.eu/udl?uri=TED:NOTICE:126943-2019:TEXT:EN:HTML
+Display Click here in Description 	Yes
+Main sector 	Residential
+Other sectors 	Civic buildings
+Email description 	Residential & council buildings design services
+Description
+
+Buildings Related Professional Services
+
+Scotland Excel is exploring options for delivering a buildings related professional services framework.
+
+The scope may include but not be limited to services of the following discipline areas:
+— architectural design for new build housing and other residential properties,
+— civil and structural engineering,
+— mechanical and electrical engineering,
+— quantity surveying,
+— construction management including CDM support and clerk of works,
+— project management,
+— building asset management,
+— condition surveying,
+— multidiscipline development and design team.
+
+Please note that at this stage the scope of the framework and its lots have yet to be determined and therefore may change from those stated in this notice.
+
+Value excluding VAT: 40 000 000.00 GBP
+
+Division into lots: yes
+
+Main site or place of performance: Various locations throughout the geographical boundaries of the participating Councils and associate members within SCOTLAND.
+Premium Tender 	No 	
+Created on 	19/03/2019 1:41 PM GMT
