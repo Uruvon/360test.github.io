@@ -1161,18 +1161,7 @@ const update = async (plt, elm, perf, isInitialLoad, instance, ancestorHostEleme
       } catch (e) {
         plt.onError(e, 3 /* WillLoadError */ , elm);
       }
-    } else if (instance) 
-    // component already initialized, this is an update
-    // already created an instance and this is an update
-    // fire off the user's componentWillUpdate method (if one was provided)
-    // componentWillUpdate runs BEFORE render() has been called
-    // but only BEFORE an UPDATE and not before the intial render
-    // get the returned promise (if one was provided)
-    try {
-      instance.componentWillUpdate && await instance.componentWillUpdate();
-    } catch (e) {
-      plt.onError(e, 5 /* WillUpdateError */ , elm);
-    }
+    } else false;
     // if this component has a render function, let's fire
     // it off and generate a vnode for this
         ((plt, cmpMeta, hostElm, instance, perf) => {
@@ -1628,7 +1617,7 @@ const initHostElement = (plt, cmpMeta, HostElementConstructor, hydratedCssClass,
           // fire off the user's elm.componentOnReady() callbacks that were
           // put directly on the element (well before anything was ready)
           (onReadyCallbacks = plt.onReadyCallbacksMap.get(elm)) && (onReadyCallbacks.forEach(cb => cb(elm)), 
-          plt.onReadyCallbacksMap.delete(elm)), !hasCmpLoaded && instance.componentDidLoad ? instance.componentDidLoad() : hasCmpLoaded && instance.componentDidUpdate && instance.componentDidUpdate();
+          plt.onReadyCallbacksMap.delete(elm)), !hasCmpLoaded && instance.componentDidLoad && instance.componentDidLoad();
         } catch (e) {
           plt.onError(e, 4 /* DidLoadError */ , elm);
         }

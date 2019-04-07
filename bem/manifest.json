@@ -3,13 +3,6 @@
   "short_name": "SB",
   "start_url": "/",
   "display": "standalone",
-  "icons": [
-    {
-      "src": "assets/icon/icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ],
   "background_color": "#488aff",
   "theme_color": "#488aff"
 }
