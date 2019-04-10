@@ -1,0 +1,105 @@
+{
+  "namespace": "TenderstreamNlp",
+  "fsNamespace": "tenderstream-nlp",
+  "loader": "../tenderstream-nlp.js",
+  "corePolyfilled": "es5-build-disabled.js",
+  "global": "tenderstream-nlp.global.js",
+  "core": "tenderstream-nlp.core.js",
+  "components": {
+    "ion-app": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      }
+    },
+    "ion-card": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "scoped"
+    },
+    "ion-card-content": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      }
+    },
+    "ion-card-header": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "shadow"
+    },
+    "ion-card-title": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "shadow"
+    },
+    "ion-content": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "shadow"
+    },
+    "ion-icon": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "shadow"
+    },
+    "ion-item": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "shadow"
+    },
+    "ion-label": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "scoped"
+    },
+    "ion-list": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      }
+    },
+    "ion-note": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "shadow"
+    },
+    "ion-ripple-effect": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "shadow"
+    },
+    "ion-textarea": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "scoped"
+    },
+    "nlp-app": {
+      "bundleIds": {
+        "ios": "nlp-app.ios",
+        "md": "nlp-app.md"
+      },
+      "encapsulation": "shadow"
+    }
+  }
+}

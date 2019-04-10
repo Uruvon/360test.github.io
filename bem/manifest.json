@@ -1,0 +1,15 @@
+{
+  "name": "tenderstream-nlp.",
+  "short_name": "tnlp",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "assets/icon/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "display": "standalone",
+  "background_color": "#488aff",
+  "theme_color": "#488aff"
+}
