@@ -98,8 +98,7 @@
       "bundleIds": {
         "ios": "nlp-app.ios",
         "md": "nlp-app.md"
-      },
-      "encapsulation": "shadow"
+      }
     }
   }
 }
