@@ -1,8 +1,0 @@
-{
-  "name": "Singularity Boilerplate",
-  "short_name": "SB",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#488aff",
-  "theme_color": "#488aff"
-}
