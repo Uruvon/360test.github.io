@@ -4625,12 +4625,6 @@ hooks.HTML5_FMT = {
     MONTH: 'YYYY-MM'                                // <input type="month" />
 };
 
-const moment = /*#__PURE__*/Object.freeze({
-    'default': hooks
-});
-
-const require$$0 = getCjsExportFromNamespace(moment);
-
 var Chart = createCommonjsModule(function (module, exports) {
 /*!
  * Chart.js v2.8.0
@@ -4639,7 +4633,7 @@ var Chart = createCommonjsModule(function (module, exports) {
  * Released under the MIT License
  */
 (function (global, factory) {
-'object' === 'object' && 'object' !== 'undefined' ? module.exports = factory(function() { try { return require$$0; } catch(e) { } }()) :
+'object' === 'object' && 'object' !== 'undefined' ? module.exports = factory(function() { try { return hooks; } catch(e) { } }()) :
 typeof undefined === 'function' && undefined.amd ? undefined(['require'], function(require) { return factory(function() { try { return require('moment'); } catch(e) { } }()); }) :
 (global.Chart = factory(global.moment));
 }(commonjsGlobal, (function (moment) { 'use strict';
